@@ -1,0 +1,51 @@
+# Worked example — Phase 7 dogfood IntentSpec
+# This intent was iterated with Claude in chat and approved before planner submission.
+# It represents the remaining Phase 7 completion work for agentic-ai-intent-layer.
+
+intent:
+  id: intent-2026-02-28-001
+  title: "Complete Phase 7 — Intent Layer scaffold"
+  created_at: "2026-02-28"
+  spec_mode: approved
+  risk_level: low
+
+  goal: >
+    The agentic-ai-intent-layer repo has its core artifacts in place (planner,
+    orchestrator v2, IntentSpec template, ADR-006 schema, review-plan.sh, lifecycle
+    hooks). The remaining work is to wire the MCP server registration into
+    .claude/settings.json, update CLAUDE.md with the intent iteration pattern, and
+    produce this worked example so a new user can understand the full intent-to-execution
+    flow end to end.
+
+  success_criteria:
+    - ".claude/settings.json registers the agentic-ai-state-layer MCP server correctly"
+    - "CLAUDE.md documents the intent iteration pattern — draft → review → approved → planner → human gate → orchestrator"
+    - "intents/intent-phase7-dogfood.yaml exists as an approved IntentSpec"
+    - "plans/task-plan-phase7-dogfood.yaml exists as a valid task plan derived from this intent"
+    - "A new user reading the repo can understand the full workflow without additional context"
+
+  constraints:
+    - "Do not modify any existing lifecycle hook scripts"
+    - "Do not modify planner.md or orchestrator.md"
+    - "All file writes must be within the repo root"
+    - "MCP server name must match the registered name in agentic-ai-state-layer: agentic-ai-state-layer"
+
+  out_of_scope:
+    - "Executing any tasks via the orchestrator (this is documentation and wiring only)"
+    - "Building new agents beyond what is already scaffolded"
+    - "Redis migration or event-driven architecture (Phase 8+)"
+    - "OTel observability integration (Phase 8+)"
+
+  context: >
+    The agentic-ai-state-layer MCP server is defined in
+    ~/agentic-ai-state-layer/src/mcp-server.ts with serverInfo.name = 'agentic-ai-state-layer'.
+    Claude Code MCP tool naming convention is mcp__<server-name>__<tool-name>.
+    The intent iteration pattern was established in ADR-005: human iterates with Claude
+    in chat until spec_mode reaches 'approved', then submits to the planner agent.
+    The planner never receives a draft spec.
+
+  notes: >
+    This IntentSpec is itself the worked example — it demonstrates the format and
+    the level of detail expected before submitting to the planner. The corresponding
+    task plan (plans/task-plan-phase7-dogfood.yaml) was produced by following planner
+    agent rules manually to show what the planner would output.

@@ -1,0 +1,49 @@
+# Phase 7 dogfood task plan
+# Produced by: planner agent (manual run — worked example)
+# Source intent: intent-2026-02-28-001
+
+plan_metadata:
+  intent_ref: intent-2026-02-28-001
+  version: 1
+  created_at: "2026-02-28T00:00:00Z"
+  planner_notes: >
+    Three independent tasks with no dependencies between them — all can run in parallel.
+    All are low-risk documentation and config writes — claude-code runtime throughout.
+    Governance block absent on all tasks — will be populated by lifecycle hooks after
+    human approval via review-plan.sh.
+
+tasks:
+  - id: task-001
+    name: "Register MCP server in settings.json"
+    description: >
+      Add the agentic-ai-state-layer MCP server to .claude/settings.json so Claude Code
+      can invoke state layer tools during orchestration. The server runs via stdio using
+      the compiled mcp-server.ts from the agentic-ai-state-layer repo.
+    agent: orchestrator
+    runtime: claude-code
+    output: ".claude/settings.json"
+    depends_on: []
+
+  - id: task-002
+    name: "Update CLAUDE.md with intent iteration pattern"
+    description: >
+      Document the full intent-to-execution workflow in CLAUDE.md so a new user
+      understands how to use the repo. Cover: draft IntentSpec → iterate with Claude
+      in chat → approved spec → planner agent → review-plan.sh → orchestrator.
+    agent: orchestrator
+    runtime: claude-code
+    output: "CLAUDE.md"
+    depends_on: []
+
+  - id: task-003
+    name: "Verify repo structure is complete"
+    description: >
+      Confirm all Phase 7 artifacts are present and correctly structured.
+      Check: .claude/agents/, intents/, plans/, scripts/, docs/architecture/.
+      Report any missing files.
+    agent: orchestrator
+    runtime: claude-code
+    output: "output/phase7-verification.txt"
+    depends_on: []
+
+history: []
