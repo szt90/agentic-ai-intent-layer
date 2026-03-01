@@ -1,0 +1,51 @@
+# ADR-006: Task Schema — canonical definition
+# Machine-readable schema reference for task-plan.yaml.
+# See DECISIONS log entry 2026-02-28 for rationale.
+
+schema_version: "1.0"
+adr: "ADR-006"
+title: "Task Schema"
+
+plan:
+  plan_metadata:
+    intent_ref: string          # ID of the source IntentSpec (required)
+    version: integer            # Increments on each planner revision (starts at 1)
+    created_at: string          # ISO 8601 datetime
+    planner_notes: string       # Optional. Planner reasoning about plan structure.
+
+  tasks:
+    - id: string                # Unique within this plan. e.g. task-001
+      name: string              # Human-readable short name
+      description: string       # What this task does and what it produces
+      agent: string             # Agent file name (without .md) from .claude/agents/
+      runtime: enum             # claude-code | docker
+      output: string            # Description of the single verifiable output
+      depends_on: list          # List of task IDs. [] for no dependencies.
+
+      # governance block — populated by lifecycle hooks only, never by planner
+      governance:
+        flags: list             # Populated by verify-on-stop.sh
+        approved_by: string     # Populated by review-plan.sh on human approval
+        reviewed_at: string     # ISO 8601 datetime of last review
+
+  history:
+    # Append-only. Previous plan versions preserved here on each revision.
+    - version: integer
+      replaced_at: string       # ISO 8601 datetime
+      reason: string            # Why this version was superseded
+      snapshot: object          # Full tasks array from the superseded version
+
+runtime_routing_rules:
+  use_docker_when:
+    - network: true
+    - risk_level: [high, critical]
+    - destructive_or_irreversible: true
+  default: claude-code
+
+governance_modes:
+  audit:
+    description: "Log warnings, do not block execution"
+    active: true
+  enforce:
+    description: "Block execution on governance flag"
+    active: false

@@ -1,0 +1,33 @@
+# IntentSpec Template — ADR-005
+# Fill in all required fields before submitting to the planner.
+# Iterate with Claude in chat until this spec is stable, then submit.
+
+intent:
+  id: ""                          # e.g. intent-2026-02-28-001
+  title: ""                       # Short human-readable name
+  created_at: ""                  # ISO 8601 date
+  spec_mode: draft                # draft | review | approved
+  risk_level: low                 # low | medium | high | critical
+
+  goal: >
+    # Required. One paragraph. What does success look like from the user's perspective?
+    # Not a list of tasks — a description of the desired end state.
+
+  success_criteria:
+    # Required. Verifiable conditions. Each must be falsifiable.
+    - ""
+    - ""
+
+  constraints:
+    # Required. Hard limits the planner and orchestrator must not violate.
+    - ""
+
+  out_of_scope:
+    # Required. Explicitly name what this intent does NOT cover.
+    - ""
+
+  context: >
+    # Optional. Background the planner needs but that doesn't fit above.
+
+  notes: >
+    # Optional. Open questions, assumptions, reviewer notes.
