@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# protect-files.sh — File protection governance hook (audit mode)
+# protect-files.sh — File protection governance hook (enforce mode)
 # Usage: bash scripts/protect-files.sh [path/to/task-plan.yaml]
 #
 # Protection model:
 #   BLOCKLIST — critical files that must never be modified by agents
 #   ALLOWLIST — only declared task output paths are permitted write targets
 #
-# Compares git diff against both lists. In audit mode: warns, does not block.
+# Compares git diff against both lists. In enforce mode: blocks on any violation (exit 1).
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ WARN_COUNT=0
 FLAGS=()
 
 warn() {
-  echo "  [WARN] $*"
+  echo "  [BLOCK] $*"
   FLAGS+=("$*")
   (( WARN_COUNT++ )) || true
 }
@@ -133,15 +133,16 @@ fi
 echo "══════════════════════════════════════════════════════"
 if [[ $WARN_COUNT -eq 0 ]]; then
   echo "  RESULT: PASS — no protection violations"
+  echo "══════════════════════════════════════════════════════"
+  echo ""
+  exit 0
 else
-  echo "  RESULT: WARN — ${WARN_COUNT} violation(s) found (audit mode — not blocking)"
+  echo "  RESULT: BLOCK — ${WARN_COUNT} violation(s) found (enforce mode — halting)"
   echo ""
   for FLAG in "${FLAGS[@]}"; do
-    echo "    ⚠  $FLAG"
+    echo "    ✗  $FLAG"
   done
+  echo "══════════════════════════════════════════════════════"
+  echo ""
+  exit 1
 fi
-echo "══════════════════════════════════════════════════════"
-echo ""
-
-# Audit mode: always exit 0
-exit 0
