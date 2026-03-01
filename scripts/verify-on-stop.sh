@@ -5,10 +5,16 @@
 # Checks:
 #   1. Output files exist as declared in task plan
 #   2. No writes outside /workspace or repo root
-#   3. Git working tree is clean after tasks
+#   3. Git working tree is clean after tasks (excluding declared outputs)
 #   4. All tasks have a completed state in sidecar
 #
 # In enforce mode: blocks on any flag raised (exit 1).
+#
+# v2 changes:
+#   - Check 5: /tmp scan now ignores Claude Code internal files; only flags
+#     repo-like file types (.yaml .json .md .txt .sh .py .ts .js)
+#   - Check 6: Declared output paths from task plan are excluded from the
+#     uncommitted file check — these are expected post-run state
 
 set -euo pipefail
 
@@ -33,6 +39,10 @@ pass() {
   echo "  [PASS] $*"
 }
 
+info() {
+  echo "  [INFO] $*"
+}
+
 echo ""
 echo "══════════════════════════════════════════════════════"
 if $PRE_FLIGHT; then
@@ -53,7 +63,6 @@ fi
 echo ""
 
 if $PRE_FLIGHT; then
-  # Pre-flight only needs sidecar check — enforce: block if sidecar unreachable
   if [[ $WARN_COUNT -gt 0 ]]; then
     echo "  RESULT: BLOCK — pre-flight failed (enforce mode — halting)"
     echo "══════════════════════════════════════════════════════"
@@ -67,6 +76,10 @@ fi
 
 # ── Check 2: Task plan exists ─────────────────────────────────────────────────
 echo "[ Task Plan ]"
+
+# Collect declared output paths for use in Check 6
+DECLARED_OUTPUTS=()
+
 if [[ ! -f "$PLAN_FILE" ]]; then
   warn "Task plan not found: $PLAN_FILE"
 else
@@ -78,6 +91,7 @@ else
   while IFS= read -r line; do
     OUTPUT_PATH=$(echo "$line" | sed 's/.*output:[[:space:]]*//' | tr -d '"' | tr -d "'")
     if [[ "$OUTPUT_PATH" =~ ^[./a-zA-Z0-9_-]+$ ]]; then
+      DECLARED_OUTPUTS+=("$OUTPUT_PATH")
       if [[ -f "$REPO_ROOT/$OUTPUT_PATH" ]]; then
         pass "Output exists: $OUTPUT_PATH"
       else
@@ -105,24 +119,63 @@ fi
 echo ""
 
 # ── Check 5: No writes outside repo root ─────────────────────────────────────
+# Only flag repo-like file types; ignore Claude Code internals in /tmp
 echo "[ Write Boundary ]"
-RECENT_WRITES=$(find /tmp -newer "$PLAN_FILE" -type f 2>/dev/null | head -5 || true)
+REPO_LIKE_PATTERN="\.(yaml|yml|json|md|txt|sh|py|ts|js|tsx|jsx)$"
+RECENT_WRITES=$(find /tmp -newer "$PLAN_FILE" -type f 2>/dev/null \
+  | grep -E "$REPO_LIKE_PATTERN" \
+  | grep -v "claude" \
+  | head -5 || true)
 if [[ -n "$RECENT_WRITES" ]]; then
-  warn "Files written to /tmp during execution — review: $RECENT_WRITES"
+  warn "Repo-like files written to /tmp during execution — review: $RECENT_WRITES"
 else
   pass "No unexpected writes to /tmp detected"
 fi
 echo ""
 
-# ── Check 6: Git working tree clean ──────────────────────────────────────────
+# ── Check 6: Git working tree clean (excluding declared outputs) ──────────────
 echo "[ Git State ]"
 cd "$REPO_ROOT"
-UNTRACKED=$(git status --porcelain 2>/dev/null || echo "")
-if [[ -z "$UNTRACKED" ]]; then
+RAW_STATUS=$(git status --porcelain 2>/dev/null || echo "")
+
+if [[ -z "$RAW_STATUS" ]]; then
   pass "Git working tree clean"
 else
-  CHANGED_COUNT=$(echo "$UNTRACKED" | wc -l)
-  warn "Git working tree has ${CHANGED_COUNT} uncommitted change(s) — review before proceeding"
+  # Filter out declared output paths — these are expected post-run
+  UNEXPECTED=""
+  while IFS= read -r status_line; do
+    FILE_PATH=$(echo "$status_line" | awk '{print $2}')
+    IS_DECLARED=false
+    for DECLARED in "${DECLARED_OUTPUTS[@]:-}"; do
+      if [[ "$FILE_PATH" == "$DECLARED" || "$FILE_PATH" == "./$DECLARED" ]]; then
+        IS_DECLARED=true
+        break
+      fi
+    done
+    if ! $IS_DECLARED; then
+      UNEXPECTED+="$status_line"$'\n'
+    fi
+  done <<< "$RAW_STATUS"
+
+  DECLARED_COUNT=$(( ${#DECLARED_OUTPUTS[@]} ))
+  DECLARED_UNCOMMITTED=$(git status --porcelain 2>/dev/null \
+    | awk '{print $2}' \
+    | grep -Ff <(printf '%s\n' "${DECLARED_OUTPUTS[@]:-}" | grep .) \
+    2>/dev/null | wc -l || echo 0)
+
+  if [[ -z "${UNEXPECTED// }" ]]; then
+    pass "Git working tree clean (${DECLARED_UNCOMMITTED} declared output(s) uncommitted — expected post-run)"
+    if [[ $DECLARED_UNCOMMITTED -gt 0 ]]; then
+      info "Uncommitted declared outputs: ${DECLARED_OUTPUTS[*]:-}"
+      info "Commit these when ready: git add <outputs> && git commit -m 'chore: add task outputs'"
+    fi
+  else
+    UNEXPECTED_COUNT=$(echo "$UNEXPECTED" | grep -c . || true)
+    warn "Git working tree has ${UNEXPECTED_COUNT} unexpected uncommitted change(s) — review before proceeding"
+    echo "$UNEXPECTED" | while IFS= read -r line; do
+      [[ -n "$line" ]] && echo "    → $line"
+    done
+  fi
 fi
 echo ""
 
