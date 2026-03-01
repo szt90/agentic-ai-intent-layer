@@ -1,0 +1,63 @@
+Phase 7 — Repo Structure Verification
+Generated: 2026-03-01
+Plan: intent-2026-02-28-001 v1
+
+======================================================
+  VERIFICATION RESULTS
+======================================================
+
+[ .claude/ ]
+  [PASS]  .claude/agents/planner.md
+  [PASS]  .claude/agents/orchestrator.md
+  [PASS]  .claude/settings.json  (bypassPermissions + MCP server registered)
+
+[ intents/ ]
+  [PASS]  intents/intent-template.yaml
+  [PASS]  intents/intent-phase7-dogfood.yaml  (spec_mode: approved)
+
+[ plans/ ]
+  [PASS]  plans/task-plan-phase7-dogfood.yaml
+  [PASS]  plans/task-plan-phase7-dogfood.approved  (approved_by: simon)
+
+[ scripts/ ]
+  [PASS]  scripts/review-plan.sh
+  [PASS]  scripts/verify-on-stop.sh
+  [PASS]  scripts/protect-files.sh
+
+[ docs/architecture/ ]
+  [PASS]  docs/architecture/ADR-006-task-schema.yaml
+
+[ output/ ]
+  [PASS]  output/  (created by task-003)
+  [PASS]  output/phase7-verification.txt  (this file)
+
+======================================================
+  MCP REGISTRATION CHECK
+======================================================
+
+  [PASS]  .claude/settings.json registers server: agentic-ai-state-layer
+  [PASS]  Command: node /home/still/agentic-ai-state-layer/dist/mcp-server.js
+  [PASS]  Type: stdio
+  [PASS]  Server name matches registered name in agentic-ai-state-layer
+
+======================================================
+  CLAUDE.md CONTENT CHECK
+======================================================
+
+  [PASS]  Full 6-step workflow documented (draft -> iterate -> approved -> planner -> review -> orchestrator)
+  [PASS]  IntentSpec iteration pattern covered (Steps 1-2)
+  [PASS]  Human gate documented (Step 4: review-plan.sh)
+  [PASS]  Lifecycle hooks documented (Step 6)
+  [PASS]  Repo structure map present
+  [PASS]  ADR table present (ADR-004, ADR-005, ADR-006)
+  [PASS]  Dependencies section present
+
+======================================================
+  SUMMARY
+======================================================
+
+  All Phase 7 artifacts present and correctly structured.
+  No missing files detected.
+  Total checks: 20 | PASS: 20 | WARN: 0 | FAIL: 0
+
+======================================================
